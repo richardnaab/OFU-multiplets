@@ -8,12 +8,10 @@ def sub_diff(arr,n):
 
 def n_angular_pairs(evts):
     n_mult = 0
-    for count in range(1,len(ra)):
+    for count in range(1,len(evts)):
         space_diff = np.abs( ofu_ang_distance(evts[:-count] , evts[count:]) )
         n_mult += np.sum(space_diff<self._delta_ang)
     return n_mult
-
-
 
 # Definition of the doublets and multiplets: arXiv:1612.06028v2
 
