@@ -62,16 +62,18 @@ class multiplets():
         while np.any( time_diff<self._delta_t ):
             space_diff = np.abs( ofu_ang_distance(self.data[:-n_lag] , self.data[n_lag:]) )
             total_cut = np.logical_and(space_diff<self._delta_ang,time_diff<self._delta_t)
-            # defines the two events for each doublet:
-            if first_events:
-                event1 = self.data[:-n_lag][total_cut]
-                event2 = self.data[n_lag:][total_cut]
-                first_events = False
-            else: # insert at correct times
-                e1_insert = np.searchsorted(event1['time'],self.data[:-n_lag][total_cut]['time'])
-                e2_insert = np.searchsorted(event2['time'],self.data[n_lag:][total_cut]['time'])
-                np.insert(event1,e1_insert,self.data[:-n_lag][total_cut])
-                np.insert(event1,e2_insert,self.data[n_lag:][total_cut])
+            print('Found any doublet pair?',np.any(total_cut))
+            if np.any(total_cut):
+                # defines the two events for each doublet:
+                if first_events:
+                    event1 = self.data[:-n_lag][total_cut]
+                    event2 = self.data[n_lag:][total_cut]
+                    first_events = False
+                else: # insert at correct times
+                    e1_insert = np.searchsorted(event1['time'],self.data[:-n_lag][total_cut]['time'])
+                    e2_insert = np.searchsorted(event2['time'],self.data[n_lag:][total_cut]['time'])
+                    np.insert(event1,e1_insert,self.data[:-n_lag][total_cut])
+                    np.insert(event1,e2_insert,self.data[n_lag:][total_cut])
             n_lag += 1
             time_diff = sub_diff(self.data['time'],n_lag)
 
