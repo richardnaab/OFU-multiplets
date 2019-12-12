@@ -1,10 +1,10 @@
 import numpy as np
 
 # from the flarestack software:
-def ang_distance(evt1,evt2):
-    return angular_distance(evt1['ra'],evt1['dec'],evt2['ra'],evt2['dec'])
+def ofu_ang_distance(evt1,evt2):
+    return ofu_angular_distance(evt1['ra'],evt1['dec'],evt2['ra'],evt2['dec'])
 
-def angular_distance(lon1, lat1, lon2, lat2):
+def ofu_angular_distance(lon1, lat1, lon2, lat2):
     """
     calculate the angular distince along the great circle
     on the surface of a shpere between the points
@@ -37,7 +37,7 @@ def angular_distance(lon1, lat1, lon2, lat2):
     )
 
 
-def doublet_average(start,end,theta_a=0.9):
+def ofu_doublet_average(start,end,theta_a=0.9):
     # theta_a : telescope FoV term
 
     # Compute the average direction of doublet, weighted with 1/uncertainty**2
@@ -57,7 +57,7 @@ def doublet_average(start,end,theta_a=0.9):
     ang_error = np.sqrt(1/np.sum(weight,axis=1))
 
     # calculate TS:
-    ang_d = angular_distance(start['ra'],start['dec'],end['ra'],end['dec'])
+    ang_d = ofu_angular_distance(start['ra'],start['dec'],end['ra'],end['dec'])
     time_d = end['time']-start['time'] #in MJD -> in TS: convert 100s to MJD
     sigma_q_2 = start['angErr']**2+end['angErr']**2
     # test statistic according according to OFU paper:
@@ -67,7 +67,7 @@ def doublet_average(start,end,theta_a=0.9):
 
 
 # general purpose
-def ComputeAverageDirection(data):
+def ofu_ComputeAverageDirection(data):
     #Compute the average direction and uncertainty of all events in data, weighted with 1/uncertainty**2
     ra = data['ra']
     dec = data['dec']
