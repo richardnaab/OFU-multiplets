@@ -6,11 +6,11 @@ from ofu_tools import ofu_ang_distance,ofu_doublet_average
 def sub_diff(arr,n):
     return arr[n:]-arr[:-n]
 
-def n_angular_pairs(evts):
+def n_angular_pairs(evts,ang_dist):
     n_mult = 0
     for count in range(1,len(evts)):
         space_diff = np.abs( ofu_ang_distance(evts[:-count] , evts[count:]) )
-        n_mult += np.sum(space_diff<self._delta_ang)
+        n_mult += np.sum(space_diff<ang_dist)
     return n_mult
 
 # Definition of the doublets and multiplets: arXiv:1612.06028v2
@@ -91,9 +91,9 @@ class multiplets():
                     mask = inv==cand    # event1[mask] are all events that form a doublet with cand
                     # find number of pair wise doublets (so far only to check if any triplet!)
                     # -> still head for improvement, e.g. really save triplets or higher multiplicity multiplets
-                    if n_angular_pairs(event1[mask]) > 0:
+                    if n_angular_pairs(event1[mask],self._delta_ang) > 0:
                         self._n_multiplets = 3
-                        print('Found {} tiplets in the sample!'.format(n_angular_pairs(event1[mask])) )
+                        print('Found {} triplets in the sample!'.format(n_angular_pairs(event1[mask],self._delta_ang)) )
 
         else:
             print('No doublets found')
