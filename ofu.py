@@ -64,21 +64,23 @@ class multiplets():
             space_diff = np.abs( ofu_ang_distance(self.data[:-n_lag] , self.data[n_lag:]) )
             total_cut = np.logical_and(space_diff<self._delta_ang,time_diff<self._delta_t)
             if np.any(total_cut):
-                # defines the two events for each doublet:
+                # defines the two events for each doublet: (event 2 is the "trigger" in realtime case)
                 if first_events == True:
                     event1 = np.copy(self.data[:-n_lag][total_cut])
                     event2 = np.copy(self.data[n_lag:][total_cut])
                     first_events = False
                 else: # insert at correct times
-                    e1_insert = np.searchsorted(event1['time'],self.data[:-n_lag][total_cut]['time'])
-                    e2_insert = np.searchsorted(event2['time'],self.data[n_lag:][total_cut]['time'])
-                    event1 = np.insert(event1,e1_insert,self.data[:-n_lag][total_cut])
-                    event2 = np.insert(event2,e2_insert,self.data[n_lag:][total_cut])
+                    #e1_insert = np.searchsorted(event1['time'],self.data[:-n_lag][total_cut]['time'])
+                    #e2_insert = np.searchsorted(event2['time'],self.data[n_lag:][total_cut]['time'])
+                    #event1 = np.insert(event1,e1_insert,self.data[:-n_lag][total_cut])
+                    #event2 = np.insert(event2,e2_insert,self.data[n_lag:][total_cut])
+                    event1 = np.append(event1,self.data[:-n_lag][total_cut])
+                    event2 = np.append(event2,self.data[n_lag:][total_cut])
             n_lag += 1
             time_diff = sub_diff(self.data['time'],n_lag)
 
         # at least one pair fulfills criterion
-        if len(event1)>0:
+        if not first_events:
             doublets=ofu_doublet_average(event1, event2 ,self._theta_a)
             self._n_multiplets = 2
             self._multiplets.append(doublets)
