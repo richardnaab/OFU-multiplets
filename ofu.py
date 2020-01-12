@@ -42,7 +42,8 @@ class multiplets():
 
     def triggers_in_radius(self,ra,dec,radius):
         # coordinates and radius in radians
-        self._multiplets[0] = restrict_trig_radius(self._multiplets[0],ra,dec,radius)
+        if self._n_multiplets >=2:
+            self._multiplets[0] = restrict_trig_radius(self._multiplets[0],ra,dec,radius)
 
     @property
     def floor(self):
