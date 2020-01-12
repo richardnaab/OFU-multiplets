@@ -100,11 +100,11 @@ class multiplets():
                     # -> still head for improvement, e.g. really save triplets or higher multiplicity multiplets
                     if n_angular_pairs(event1[mask],self._delta_ang) > 0:
                         self._n_multiplets = 3
-                        if info:
+                        if self._info:
                             print('Found {} triplets in the sample!'.format(n_angular_pairs(event1[mask],self._delta_ang)) )
 
         else:
-            if info:
+            if self._info:
                 print('No doublets found')
 
 
