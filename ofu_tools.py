@@ -62,7 +62,8 @@ def ofu_doublet_average(start,end,theta_a=0.9):
     sigma_q_2 = start['angErr']**2+end['angErr']**2
     # test statistic according according to OFU paper:
     TS = ang_d**2/sigma_q_2 + 2*np.log(2*np.pi*sigma_q_2) - 2*np.log(1-np.exp(-theta_a**2/(2*ang_error))) + 2*np.log(time_d/(100/86400.))
-    return np.rec.fromarrays( (ra_average,dec_average,ang_error,start['time'],end['time'],TS), names=('ra_av', 'dec_av', 'sigma_av', 't0', 't1', 'ts') )
+    return np.rec.fromarrays( (ra_average,dec_average,ang_error,start['time'],end['time'],TS,end['dec'],end['ra']),
+        names=('ra_av', 'dec_av', 'sigma_av', 't0', 't1', 'ts', 'trig_dec', 'trig_ra') )
     #return np.ndarray( [(ra_average,dec_average,ang_error,end['time'],TS)],dtype=[('ra_av', 'f8'), ('dec_av', 'f8'), ('sigma_av', 'f8'), ('end_time', 'f8'), ('ts', 'f8')] )
 
 
