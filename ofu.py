@@ -17,7 +17,7 @@ def n_angular_pairs(evts,ang_dist):
 
 class multiplets():
     # data: , delta_t: cut on time difference, delta_ang: cut on angular separation, telescope_term: FoV term in doublet TS, floor: clip values of ang Errors
-    def __init__(self,data,delta_t=100.,delta_ang=3.5,telescope_term=0.9,floor=0.2,only_doublets=False):
+    def __init__(self,data,delta_t=100.,delta_ang=3.5,telescope_term=0.9,floor=0.2,info=False):
         # assuming data that is ordered
         assert (np.sum(np.diff(data['time'])<0.)>=0 ), 'data has to be ordered in time!'
         self.data = data
@@ -26,7 +26,7 @@ class multiplets():
         self._delta_t = delta_t/86400. #in MJD
         self._delta_ang = np.radians(delta_ang) #in radians
         self._theta_a = telescope_term
-        self._only_doublets = only_doublets
+        self._info = info
         if floor is not None:
             self._apply_floor(floor)
         # scan for multiplets
@@ -100,10 +100,12 @@ class multiplets():
                     # -> still head for improvement, e.g. really save triplets or higher multiplicity multiplets
                     if n_angular_pairs(event1[mask],self._delta_ang) > 0:
                         self._n_multiplets = 3
-                        print('Found {} triplets in the sample!'.format(n_angular_pairs(event1[mask],self._delta_ang)) )
+                        if info:
+                            print('Found {} triplets in the sample!'.format(n_angular_pairs(event1[mask],self._delta_ang)) )
 
         else:
-            print('No doublets found')
+            if info:
+                print('No doublets found')
 
 
     def info(self):

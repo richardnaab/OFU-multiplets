@@ -69,9 +69,9 @@ def ofu_doublet_average(start,end,theta_a=0.9):
 
 
 def restrict_trig_radius(doublets,ra,dec,radius):
-    # preselect triggers from band around point
     min_dec = min(max(dec - radius, -np.pi/2.), np.pi/2. - 2.*radius)
     max_dec = min_dec + 2.*radius
+    # preselect triggers from band around point
     doub_band = doublets[(min_dec <= doublets['trig_dec']) & (doublets['trig_dec'] <= max_dec)]
     # get distance and return triggers within radius around point
     dist  = ofu_angular_distance(ra, dec, doub_band['trig_ra'], doub_band['trig_dec'])
