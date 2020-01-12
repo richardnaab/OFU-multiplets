@@ -1,6 +1,6 @@
 # extract all multiplets from a given dataset
 import numpy as np
-from ofu_tools import ofu_ang_distance,ofu_doublet_average
+from ofu_tools import ofu_ang_distance,ofu_doublet_average,restrict_trig_radius
 
 
 def sub_diff(arr,n):
@@ -39,6 +39,10 @@ class multiplets():
 
     def shuffle_ra(self):
         self.data['ra'] = np.random.permutation(self.data['ra'])
+
+    def triggers_in_radius(self,ra,dec,radius):
+        # coordinates and radius in radians
+        self._multiplets[0] = restrict_trig_radius(self._multiplets[0],ra,dec,radius)
 
     @property
     def floor(self):

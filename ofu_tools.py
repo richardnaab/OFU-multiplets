@@ -1,9 +1,10 @@
 import numpy as np
 
-# from the flarestack software:
+
 def ofu_ang_distance(evt1,evt2):
     return ofu_angular_distance(evt1['ra'],evt1['dec'],evt2['ra'],evt2['dec'])
 
+# from the flarestack software:
 def ofu_angular_distance(lon1, lat1, lon2, lat2):
     """
     calculate the angular distince along the great circle
@@ -65,6 +66,16 @@ def ofu_doublet_average(start,end,theta_a=0.9):
     return np.rec.fromarrays( (ra_average,dec_average,ang_error,start['time'],end['time'],TS,end['dec'],end['ra']),
         names=('ra_av', 'dec_av', 'sigma_av', 't0', 't1', 'ts', 'trig_dec', 'trig_ra') )
     #return np.ndarray( [(ra_average,dec_average,ang_error,end['time'],TS)],dtype=[('ra_av', 'f8'), ('dec_av', 'f8'), ('sigma_av', 'f8'), ('end_time', 'f8'), ('ts', 'f8')] )
+
+
+def restrict_trig_radius(doublets,ra,dec,radius):
+    # preselect triggers from band around point
+    min_dec = min(max(dec - radius, -np.pi/2.), np.pi/2. - 2.*radius)
+    max_dec = min_dec + 2.*radius
+    doub_band = doublets[(min_dec <= doublets['trig_dec']) & (doublets['trig_dec'] <= max_dec)]
+    # get distance and return triggers within radius around point
+    dist  = ofu_angular_distance(ra, dec, doub_band['trig_ra'], doub_band['trig_dec'])
+    return doub_band[dist<=radius]
 
 
 # general purpose
