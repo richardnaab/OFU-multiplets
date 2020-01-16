@@ -17,8 +17,9 @@ def n_angular_pairs(evts,ang_dist):
 
 class multiplets():
     # data: , delta_t: cut on time difference (sec), delta_ang: cut on angular separation (deg),
-    # telescope_term: FoV term (deg) in doublet TS, floor: clip values of ang Errors (deg)
-    def __init__(self,data,delta_t=100.,delta_ang=3.5,telescope_term=0.9,floor=0.2,info=False):
+    # telescope_term: FoV term (deg) in doublet TS, floor: clip values of ang Errors (deg),
+    # info: some prints for help, best_trig: if multiple doublets have same trigger, save only the one with highest TS?
+    def __init__(self,data,delta_t=100.,delta_ang=3.5,telescope_term=0.9,floor=0.2,info=False,best_trig=True):
         # assuming data that is ordered
         assert (np.sum(np.diff(data['time'])<0.)>=0 ), 'data has to be ordered in time!'
         self.data = data
@@ -28,6 +29,7 @@ class multiplets():
         self._delta_ang = np.radians(delta_ang) #in radians
         self._theta_a = telescope_term
         self._info = info
+        self._best_trig = best_trig
         if floor is not None:
             self._apply_floor(floor)
         # scan for multiplets
@@ -87,12 +89,14 @@ class multiplets():
 
         # at least one pair fulfills criterion
         if not first_events:
-            doublets=ofu_doublet_average(event1, event2 ,self._theta_a)
             self._n_multiplets = 2
-            self._multiplets.append(doublets)
-
+            doublets=ofu_doublet_average(event1, event2 ,self._theta_a)
             # scan here for higher multiplicities:
+            # find triplets/quadruplets/..  and select highest TS
             uni,index,inv,counts = np.unique(event2,return_index=True, return_inverse=True, return_counts=True)
+            if self._best_trig :
+                # first add all doublets with unique trigger
+                doublets_best_trig = doublets[index[counts==1]]
             if np.any(counts>=2):
                 candidates, = np.where(counts>=2)
                 for cand in candidates:
@@ -103,6 +107,14 @@ class multiplets():
                         self._n_multiplets = 3
                         if self._info:
                             print('Found {} triplets in the sample!'.format(n_angular_pairs(event1[mask],self._delta_ang)) )
+                    if self._best_trig : # add doublet with highest TS to unique (best trig) doublets
+                        same_trig = doublets[mask] # all doublets having the same trigger, best TS is the lowest one
+                        doublets_best_trig = np.append(doublets_best_trig, same_trig[np.argmin(same_trig['ts'])] )
+
+            if self._best_trig :
+                self._multiplets.append(doublets_best_trig)
+            else:
+                self._multiplets.append(doublets)
 
         else:
             if self._info:
