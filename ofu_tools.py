@@ -44,7 +44,7 @@ def ofu_doublet_average(start,end,theta_a=0.9):
     # Compute the average direction of doublet, weighted with 1/uncertainty**2
     ra = np.column_stack((start['ra'],end['ra']))
     dec = np.column_stack(( start['dec'],end['dec']))
-    weight = np.column_stack((1./start['angErr']**2,1./start['angErr']**2))
+    weight = np.column_stack((1./start['angErr']**2,1./end['angErr']**2))
 
     x = np.average(weight * np.cos(ra) * np.cos(dec),axis=1)
     y = np.average(weight * np.sin(ra) * np.cos(dec),axis=1)
@@ -62,7 +62,7 @@ def ofu_doublet_average(start,end,theta_a=0.9):
     time_d = end['time']-start['time'] #in MJD -> in TS: convert 100s to MJD
     sigma_q_2 = start['angErr']**2+end['angErr']**2
     # test statistic according according to OFU paper:
-    TS = ang_d**2/sigma_q_2 + 2*np.log(2*np.pi*sigma_q_2) - 2*np.log(1-np.exp(-theta_a**2/(2*ang_error))) + 2*np.log(time_d/(100/86400.))
+    TS = ang_d**2/sigma_q_2 + 2*np.log(2*np.pi*sigma_q_2) - 2*np.log(1-np.exp(-(np.radians(theta_a)**2)/(2*(ang_error**2)))) + 2*np.log(time_d/(100/86400.))
     return np.rec.fromarrays( (ra_average,dec_average,ang_error,start['time'],end['time'],TS,end['dec'],end['ra']),
         names=('ra_av', 'dec_av', 'sigma_av', 't0', 't1', 'ts', 'trig_dec', 'trig_ra') )
     #return np.ndarray( [(ra_average,dec_average,ang_error,end['time'],TS)],dtype=[('ra_av', 'f8'), ('dec_av', 'f8'), ('sigma_av', 'f8'), ('end_time', 'f8'), ('ts', 'f8')] )

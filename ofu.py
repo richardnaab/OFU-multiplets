@@ -16,7 +16,8 @@ def n_angular_pairs(evts,ang_dist):
 # Definition of the doublets and multiplets: arXiv:1612.06028v2
 
 class multiplets():
-    # data: , delta_t: cut on time difference, delta_ang: cut on angular separation, telescope_term: FoV term in doublet TS, floor: clip values of ang Errors
+    # data: , delta_t: cut on time difference (sec), delta_ang: cut on angular separation (deg),
+    # telescope_term: FoV term (deg) in doublet TS, floor: clip values of ang Errors (deg)
     def __init__(self,data,delta_t=100.,delta_ang=3.5,telescope_term=0.9,floor=0.2,info=False):
         # assuming data that is ordered
         assert (np.sum(np.diff(data['time'])<0.)>=0 ), 'data has to be ordered in time!'
