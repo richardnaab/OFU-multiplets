@@ -1,6 +1,6 @@
 # extract all multiplets from a given dataset
 import numpy as np
-from ofu_tools import ofu_ang_distance,ofu_doublet_average,restrict_trig_radius
+from ofu_tools import ofu_ang_distance,ofu_doublet_average,ofu_multiplet_average, multiplet_dtype,restrict_trig_radius
 
 
 def sub_diff(arr,n):
@@ -19,7 +19,9 @@ class multiplets():
     # data: , delta_t: cut on time difference (sec), delta_ang: cut on angular separation (deg),
     # telescope_term: FoV term (deg) in doublet TS, floor: clip values of ang Errors (deg),
     # info: some prints for help, best_trig: if multiple doublets have same trigger, save only the one with highest TS?
-    def __init__(self,data,delta_t=100.,delta_ang=3.5,telescope_term=0.9,floor=0.2,info=False,best_trig=True):
+    # triplet_crit: criterion for the triplets to be selected. "loose" requires one event to belong to (at least) two doublets,
+    #                                                       "strict" requires the two remaining events to also form a doublet
+    def __init__(self,data,delta_t=100.,delta_ang=3.5,telescope_term=0.9,floor=0.2,info=False,best_trig=True,triplet_crit='loose'):
         # assuming data that is ordered
         assert (np.sum(np.diff(data['time'])<0.)>=0 ), 'data has to be ordered in time!'
         self.data = data
@@ -32,9 +34,12 @@ class multiplets():
         self._best_trig = best_trig
         if floor is not None:
             self._apply_floor(floor)
-        # scan for multiplets
-        self.__process()
-
+        if triplet_crit in {'loose','strict'}:
+            self._triplet_crit = triplet_crit
+            # scan for multiplets
+            self.__process()
+        else:
+            print('Triplet criterion not understood, nothing done!')
 
     def _apply_floor(self,floor):
         self.data['angErr'] = np.clip(self.data['angErr'],a_min=np.radians(floor),a_max=None)
@@ -77,11 +82,7 @@ class multiplets():
                     event1 = np.copy(self.data[:-n_lag][total_cut])
                     event2 = np.copy(self.data[n_lag:][total_cut])
                     first_events = False
-                else: # insert at correct times
-                    #e1_insert = np.searchsorted(event1['time'],self.data[:-n_lag][total_cut]['time'])
-                    #e2_insert = np.searchsorted(event2['time'],self.data[n_lag:][total_cut]['time'])
-                    #event1 = np.insert(event1,e1_insert,self.data[:-n_lag][total_cut])
-                    #event2 = np.insert(event2,e2_insert,self.data[n_lag:][total_cut])
+                else:
                     event1 = np.append(event1,self.data[:-n_lag][total_cut])
                     event2 = np.append(event2,self.data[n_lag:][total_cut])
             n_lag += 1
@@ -92,29 +93,100 @@ class multiplets():
             self._n_multiplets = 2
             doublets=ofu_doublet_average(event1, event2 ,self._theta_a)
             # scan here for higher multiplicities:
-            # find triplets/quadruplets/..  and select highest TS
-            uni,index,inv,counts = np.unique(event2,return_index=True, return_inverse=True, return_counts=True)
-            if self._best_trig :
-                # first add all doublets with unique trigger
-                doublets_best_trig = doublets[index[counts==1]]
-            if np.any(counts>=2):
-                candidates, = np.where(counts>=2)
-                for cand in candidates:
-                    mask = inv==cand    # event1[mask] are all events that form a doublet with cand
-                    # find number of pair wise doublets (so far only to check if any triplet!)
-                    # -> still head for improvement, e.g. really save triplets or higher multiplicity multiplets
-                    if n_angular_pairs(event1[mask],self._delta_ang) > 0:
-                        self._n_multiplets = 3
-                        if self._info:
-                            print('Found {} triplets in the sample!'.format(n_angular_pairs(event1[mask],self._delta_ang)) )
-                    if self._best_trig : # add doublet with highest TS to unique (best trig) doublets
-                        same_trig = doublets[mask] # all doublets having the same trigger, best TS is the lowest one
-                        doublets_best_trig = np.append(doublets_best_trig, same_trig[np.argmin(same_trig['ts'])] )
+            multiplets = np.zeros(0, dtype=multiplet_dtype)
+            # find triplets/quadruplets/..
+            all_times = np.append(event1['time'],event2['time'])
+            uni,index,counts = np.unique(all_times, return_index=True,return_counts=True)
 
             if self._best_trig :
-                self._multiplets.append(doublets_best_trig)
+                # find doublets in which both events belong to one doublet only
+                unique_ind = index[counts==1]
+                ev1_uni_ind = unique_ind[unique_ind<len(all_times)/2]
+                ev2_uni_ind = unique_ind[unique_ind>=len(all_times)/2]-len(all_times)/2
+                # ""-len(all_times)/2" shifts possible indices back to [0,....,len(event2)-1]
+                ev1_uni_bool = np.full(len(all_times)/2,False)
+                ev1_uni_bool[ev1_uni_ind] = True
+                ev2_uni_bool = np.full(len(all_times)/2,False)
+                ev2_uni_bool[ev2_uni_ind] = True
+                #doublets_best_trig = doublets[np.logical_and(ev1_uni_bool,ev2_uni_bool)]
+                multiplets = np.append(multiplets,doublets[np.logical_and(ev1_uni_bool,ev2_uni_bool)])
+
             else:
-                self._multiplets.append(doublets)
+                multiplets = np.append(multiplets,doublets)
+
+            # Distinguish the triplet criterions:
+            if self._triplet_crit == 'loose':
+                # go through all events that belong to at least two doublets:
+                if np.any(counts>=2):
+                    # at least one event belongs to at least two doublets
+                    self._n_multiplets = 3
+                    if self._info:
+                        print('Found {} triplets (loose criterion) in the sample!'.format(np.sum(counts>=2)) )
+                for cand in uni[counts>=2]:
+                    #select all events contributing to the multiplet:
+                    central = self.data[np.where(self.data['time']==cand)]
+                    before = event1[np.where(event2['time']==cand)]
+                    after = event2[np.where(event1['time']==cand)]
+
+                    mult = np.append(central,before)
+                    mult = np.append(mult,after)
+                    #calculate combined position: (no TS in this case)
+                    multiplets = np.append(multiplets,ofu_multiplet_average(mult,3))
+
+            elif self._triplet_crit == 'strict':
+                # all doublets with both events belonging to one doublet only are found.
+                # array to store pair-wise doublets that pass the loose triplet criterion but fail the strict one
+                sub_doublets = np.zeros(0, dtype=multiplet_dtype)
+                higher_mult = np.zeros(0, dtype=multiplet_dtype)
+
+                # go through all events that belong to at least two doublets
+                for cand in uni[counts>=2]:
+                    #print('Next triplet cand')
+                    #select all events contributing to the multiplet:
+                    central = self.data[np.where(self.data['time']==cand)]
+                    before = event1[np.where(event2['time']==cand)]
+                    after = event2[np.where(event1['time']==cand)]
+
+                    # need to check: temporal AND spacial overlap, again!
+                    cluster_events = np.append(before,central)
+                    cluster_events = np.append(cluster_events,after)
+                    cluster_times = np.sort(cluster_events['time'])
+                    # Loop over all possible time combinations:
+                    i=0
+                    test_time = cluster_times[i]
+                    evt_in_cluster = cluster_events[np.logical_and(cluster_events['time']>=test_time,cluster_events['time']<=test_time+self._delta_t)]
+                    # catch case of triplet .. higher multiplicity in any case gives triplet, but can miss some of the sub_doublets
+                    if len(cluster_events)==3:
+                        if len(evt_in_cluster)<3:
+                            sub_doublets = np.append(sub_doublets,doublets[doublets['t0']==cand])
+                            sub_doublets = np.append(sub_doublets,doublets[doublets['t1']==cand])
+
+                    while len(evt_in_cluster)>=3:
+                        print(len(evt_in_cluster))
+                        # check if events in cluster also form a doublet with each other
+                        if n_angular_pairs(evt_in_cluster,self._delta_ang) > 0:
+                            self._n_multiplets = 3
+                            #trigger is "central" event (corresponding to the cand time)
+                            higher_mult = np.append(higher_mult,ofu_multiplet_average(evt_in_cluster,3))
+                        else:
+                            pass
+                            ### To be further completed to also collect sub_doublets, only chose best fit of these ..
+                        i += 1
+                        test_time = cluster_times[i]
+                        evt_in_cluster = cluster_events[np.logical_and(cluster_events['time']>=test_time,cluster_events['time']<=test_time+self._delta_t)]
+
+                higher_mult = np.unique(higher_mult)
+                # go over the remaining sub_doublets:
+                sub_doublets = np.unique(sub_doublets)
+                multiplets = np.append(multiplets,sub_doublets)
+                multiplets = np.append(multiplets,higher_mult)
+
+
+            # at the moment: double counting of triplets ->
+            # if triplet fulfills strict criterion, different cand can give the same multiplett
+            # keeping them allows to select trigger position ..
+
+            self._multiplets.append(multiplets)
 
         else:
             if self._info:
