@@ -102,11 +102,12 @@ class multiplets():
                 # find doublets in which both events belong to one doublet only
                 unique_ind = index[counts==1]
                 ev1_uni_ind = unique_ind[unique_ind<len(all_times)/2]
-                ev2_uni_ind = unique_ind[unique_ind>=len(all_times)/2]-len(all_times)/2
+                ev2_uni_ind = unique_ind[unique_ind>=len(all_times)/2]-int(len(all_times)/2 )
                 # ""-len(all_times)/2" shifts possible indices back to [0,....,len(event2)-1]
-                ev1_uni_bool = np.full(len(all_times)/2,False)
+
+                ev1_uni_bool = np.full(int(len(all_times)/2),False)
                 ev1_uni_bool[ev1_uni_ind] = True
-                ev2_uni_bool = np.full(len(all_times)/2,False)
+                ev2_uni_bool = np.full(int(len(all_times)/2),False)
                 ev2_uni_bool[ev2_uni_ind] = True
                 #doublets_best_trig = doublets[np.logical_and(ev1_uni_bool,ev2_uni_bool)]
                 multiplets = np.append(multiplets,doublets[np.logical_and(ev1_uni_bool,ev2_uni_bool)])
